@@ -26,6 +26,4 @@ class SensorHumedad(Sensor):
         self.maximo = maximo
 
     def es_riesgo(self, valor: int):
-        if valor > self.maximo:
-            return True
-        return False
+        return valor > self.maximo
