@@ -179,8 +179,7 @@ La propiedad debe producir un texto coherente para ambos casos:
 Cree `src/agroalerta/reporte.py` con:
 
 ```python
-def contar_riesgos(sensores, lecturas):
-    ...
+def contar_riesgos(sensores, lecturas): ...
 ```
 
 La función recibe:
