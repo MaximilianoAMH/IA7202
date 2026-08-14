@@ -6,19 +6,27 @@ class Sensor(ABC):
         self._nombre = nombre
         self._unidad = unidad
 
+    @property
+    def nombre(self):
+        return self._nombre
+
+    @property
+    def unidad(self):
+        return self._unidad
+
     @abstractmethod
-    def es_riesgo(self, valor: int) -> bool:
-        return valor
+    def es_riesgo(self, valor: float) -> bool:
+        pass
 
 
 class SensorTemperatura(Sensor):
-    def __init__(self, maximo, minimo):
+    def __init__(self, minimo, maximo):
         super().__init__("temperatura", "°C")
-        self._maximo = maximo
         self._minimo = minimo
+        self._maximo = maximo
 
-    def es_riesgo(self, valor: int) -> bool:
-        return valor < self.minimo or valor > self.maximo
+    def es_riesgo(self, valor: float) -> bool:
+        return valor < self._minimo or valor > self._maximo
 
     @property
     def rango_seguro(self):
@@ -30,8 +38,8 @@ class SensorViento(Sensor):
         super().__init__("viento", "km/h")
         self._maximo = maximo
 
-    def es_riesgo(self, valor: int) -> bool:
-        return valor > self.maximo
+    def es_riesgo(self, valor: float) -> bool:
+        return valor > self._maximo
 
     @property
     def rango_seguro(self):
@@ -43,8 +51,8 @@ class SensorHumedad(Sensor):
         super().__init__("humedad", "%")
         self._maximo = maximo
 
-    def es_riesgo(self, valor: int) -> bool:
-        return valor > self.maximo
+    def es_riesgo(self, valor: float) -> bool:
+        return valor > self._maximo
 
     @property
     def rango_seguro(self):
