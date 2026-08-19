@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 from scipy.signal import convolve2d
 
-from src.pixellab.imagen import Imagen
+from .imagen import Imagen
 
 
 class LibImagen:
@@ -60,3 +60,85 @@ class LibImagen:
         new_image = np.stack(img_out, axis=2)
         new_image[new_image > 255], new_image[new_image < 0] = 255, 0
         return Imagen(new_image.astype(int))
+    
+    def to_negative(self, img_in: Imagen) -> Imagen:
+        resultado = (255 - img_in.imagen).astype(int)
+        return Imagen(np.copy(resultado))
+
+    def to_gray(self, img_in: Imagen) -> Imagen:
+        R = img_in.imagen[:, :, 0]
+        G = img_in.imagen[:, :, 1]
+        B = img_in.imagen[:, :, 2]
+
+        gris = 0.299 * R + 0.587 * G + 0.114 * B
+
+        resultado = np.stack(
+            [gris, gris, gris],
+            axis=2,
+        ).astype(int)
+
+        return Imagen(np.copy(resultado))
+
+    def get_channel(self, img_in: Imagen, channel: str) -> Imagen:
+        resultado = np.zeros_like(img_in.imagen)
+
+        if channel == "r":
+            resultado[:, :, 0] = img_in.imagen[:, :, 0]
+
+        elif channel == "g":
+            resultado[:, :, 1] = img_in.imagen[:, :, 1]
+
+        elif channel == "b":
+            resultado[:, :, 2] = img_in.imagen[:, :, 2]
+
+        else:
+            raise ValueError(
+                f"Canal '{channel}' no válido. Valores posibles: 'r', 'g' o 'b'."
+            )
+
+        resultado = resultado.astype(int)
+
+        return Imagen(np.copy(resultado))
+
+    def flip(self, img_in: Imagen, axis: str) -> Imagen:
+            
+        if axis == "h":
+            resultado = img_in.imagen[:, ::-1, :]
+
+        elif axis == "v":
+            resultado = img_in.imagen[::-1, :, :]
+
+        else:
+            raise ValueError(
+                f"Eje '{axis}' no válido. "
+                "Valores posibles: 'h' (horizontal) o 'v' (vertical)."
+            )
+
+        resultado = resultado.astype(int)
+
+        return Imagen(np.copy(resultado))
+
+    def set_saturation(self, img_in: Imagen, C: float) -> Imagen:
+        gris = self.to_gray(img_in).imagen
+
+        resultado = gris + C * (img_in.imagen - gris)
+
+        resultado = resultado.astype(int)
+
+        resultado[resultado > 255] = 255
+        resultado[resultado < 0] = 0
+
+        return Imagen(np.copy(resultado))
+
+
+    def set_contrast(self, img_in: Imagen, C: float) -> Imagen:
+        F = 259 * (C + 255) / (255 * (259 - C))
+
+        resultado = F * (img_in.imagen - 128) + 128
+
+        resultado = resultado.astype(int)
+
+        resultado[resultado > 255] = 255
+        resultado[resultado < 0] = 0
+
+        return Imagen(np.copy(resultado))
