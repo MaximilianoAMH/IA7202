@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import polars as pl
 
-from src.meteolab.constantes import Tabla, PERIODOS_MENSUALES
+from src.meteolab.constantes import PERIODOS_MENSUALES, Tabla
 
 
 def resumen_de_nulos(temperaturas: pl.DataFrame) -> pl.DataFrame:
@@ -12,23 +12,24 @@ def resumen_de_nulos(temperaturas: pl.DataFrame) -> pl.DataFrame:
 
     total = temperaturas.height
 
-    return pl.DataFrame({
-        "columna": temperaturas.columns,
-        "nulos": [
-            temperaturas[col].null_count()
-            for col in temperaturas.columns
-        ],
-        "porcentaje_nulos": [
-            temperaturas[col].null_count() / total * 100
-            for col in temperaturas.columns
-        ],
-    })
+    return pl.DataFrame(
+        {
+            "columna": temperaturas.columns,
+            "nulos": [
+                temperaturas[col].null_count() for col in temperaturas.columns
+            ],
+            "porcentaje": [
+                temperaturas[col].null_count() / total * 100
+                for col in temperaturas.columns
+            ],
+        }
+    )
+
 
 def claves_repetidas(temperaturas: Tabla) -> Tabla:
     """Cuenta repeticiones de país, año y periodo."""
     return (
-        temperaturas
-        .group_by(["iso_alpha3", "year", "period"])
+        temperaturas.group_by(["iso_alpha3", "year", "period"])
         .len()
         .filter(pl.col("len") > 1)
     )

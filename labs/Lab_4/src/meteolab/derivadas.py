@@ -11,7 +11,7 @@ def agregar_fecha_mensual(mensuales: Tabla) -> Tabla:
     """Agrega month y una fecha nativa de Polars."""
     return (
         mensuales.with_columns(
-            pl.col("period").replace(MESES).cast(pl.Int64).alias("month")
+            pl.col("period").replace(MESES).cast(pl.Int8).alias("month")
         )
         .with_columns(
             pl.date(
