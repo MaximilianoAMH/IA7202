@@ -125,15 +125,21 @@ def load_contract(path: Path) -> dict[str, Any]:
 
 def validate_contract(frame: pl.DataFrame, contract: dict[str, Any]) -> None:
     """Levanta ``ContractViolation`` si ``frame`` rompe su contrato."""
+
+    # Primero verificar si la tabla puede estar vacía
+    if frame.is_empty() and not contract["allow_empty"]:
+        raise ContractViolation(
+            f"{contract['table']} no admite tablas vacías."
+        )
+
+    # Luego verificar columnas requeridas
     required_columns = set(contract["required_columns"])
     missing = required_columns - set(frame.columns)
+
     if missing:
         raise ContractViolation(
             f"{contract['table']} no tiene: {', '.join(sorted(missing))}."
         )
-
-    if frame.is_empty() and not contract["allow_empty"]:
-        raise ContractViolation(f"{contract['table']} no admite tablas vacías.")
 
     for column, expected in contract["column_types"].items():
         dtype = frame.schema[column]
