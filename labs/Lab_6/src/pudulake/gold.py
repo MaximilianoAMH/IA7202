@@ -11,17 +11,39 @@ def build_rfm_exclusions(
     orders: pl.DataFrame, payments: pl.DataFrame
 ) -> pl.DataFrame:
     """Registra órdenes entregadas sin pago para excluirlas de RFM."""
-    raise NotImplementedError(
-        "Completen build_rfm_exclusions antes de ejecutar el programa."
+    return (
+        orders.filter(pl.col("order_status") == "delivered")
+        .join(
+            payments.select("order_id").unique(),
+            on="order_id",
+            how="anti",
+        )
+        .select(
+            "order_id",
+            "customer_id",
+            "order_purchase_timestamp",
+        )
+        .with_columns(pl.lit("delivered_order_without_payment").alias("reason"))
+        .sort("order_id")
     )
 
 
 def build_sales_daily(
     orders: pl.DataFrame, items: pl.DataFrame
 ) -> pl.DataFrame:
-    """Construye ventas de ítems por fecha de compra y órdenes entregadas."""
-    raise NotImplementedError(
-        "Completen build_sales_daily antes de ejecutar el programa."
+    """Resume precios de ítems y órdenes entregadas por fecha de compra."""
+    return (
+        orders.filter(pl.col("order_status") == "delivered")
+        .join(items, on="order_id", how="inner")
+        .with_columns(
+            pl.col("order_purchase_timestamp").dt.date().alias("sale_date")
+        )
+        .group_by("sale_date")
+        .agg(
+            pl.col("price").sum().alias("items_sold_value"),
+            pl.col("order_id").n_unique().alias("delivered_orders"),
+        )
+        .sort("sale_date")
     )
 
 
@@ -31,7 +53,57 @@ def build_customer_rfm(
     payments: pl.DataFrame,
     segments: dict[str, Any],
 ) -> pl.DataFrame:
-    """Calcula RFM de compras entregadas y aplica reglas congeladas."""
-    raise NotImplementedError(
-        "Completen build_customer_rfm antes de ejecutar el programa."
+    """Calcula RFM por persona desde órdenes entregadas con pago."""
+    rules = segments["segments"]
+
+    payments_by_order = payments.group_by("order_id").agg(
+        pl.col("payment_value").sum().alias("order_payment")
     )
+
+    eligible = (
+        orders.filter(pl.col("order_status") == "delivered")
+        .join(
+            payments_by_order,
+            on="order_id",
+            how="inner",
+        )
+        .join(
+            customers.select("customer_id", "customer_unique_id"),
+            on="customer_id",
+            how="inner",
+        )
+    )
+
+    rfm = (
+        eligible.group_by("customer_unique_id")
+        .agg(
+            pl.col("order_purchase_timestamp").max().alias("last_purchase"),
+            pl.col("order_id").n_unique().alias("frequency"),
+            pl.col("order_payment").sum().alias("monetary"),
+        )
+        .with_columns(
+            (
+                (pl.col("last_purchase").max().dt.date() + pl.duration(days=1))
+                - pl.col("last_purchase").dt.date()
+            )
+            .dt.total_days()
+            .alias("recency_days")
+        )
+    )
+
+    return rfm.with_columns(
+        pl.when(
+            (pl.col("recency_days") <= rules["champions"]["max_recency_days"])
+            & (pl.col("frequency") >= rules["champions"]["min_frequency"])
+            & (pl.col("monetary") >= rules["champions"]["min_monetary"])
+        )
+        .then(pl.lit("Champions"))
+        .when(pl.col("frequency") >= rules["loyal"]["min_frequency"])
+        .then(pl.lit("Loyal"))
+        .when(pl.col("recency_days") <= rules["new"]["max_recency_days"])
+        .then(pl.lit("New"))
+        .when(pl.col("recency_days") >= rules["lost"]["min_recency_days"])
+        .then(pl.lit("Lost"))
+        .otherwise(pl.lit("Others"))
+        .alias("segment")
+    ).sort("customer_unique_id")
