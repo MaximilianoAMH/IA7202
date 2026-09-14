@@ -1,0 +1,22 @@
+table: silver.customers
+purpose: Conservar clientes validados manteniendo customer_id y customer_unique_id sin agrupar.
+grain: Una fila por cada customer_id.
+owner: data-engineering
+classification: internal
+lineage:
+  - bronze.customers
+allow_empty: false
+primary_key:
+  - customer_id
+required_columns:
+  - customer_id
+  - customer_unique_id
+column_types:
+  customer_id: string
+  customer_unique_id: string
+constraints:
+  customer_id:
+    nullable: false
+    unique: true
+  customer_unique_id:
+    nullable: false

@@ -1,0 +1,26 @@
+table: silver.payments
+purpose: Conservar pagos validos asociados solo a ordenes existentes.
+grain: Una fila por secuencia de pago dentro de una orden.
+owner: data-engineering
+classification: internal
+lineage:
+  - bronze.payments
+allow_empty: false
+primary_key:
+  - order_id
+  - payment_sequential
+required_columns:
+  - order_id
+  - payment_sequential
+  - payment_value
+column_types:
+  order_id: string
+  payment_sequential: integer
+  payment_value: float
+constraints:
+  order_id:
+    nullable: false
+  payment_sequential:
+    nullable: false
+  payment_value:
+    nullable: false

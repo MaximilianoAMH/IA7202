@@ -1,0 +1,2 @@
+class LecturaInvalidaError(Exception):
+    pass

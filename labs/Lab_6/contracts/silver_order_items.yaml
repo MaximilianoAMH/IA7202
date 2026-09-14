@@ -1,0 +1,30 @@
+table: silver.order_items
+purpose: Conservar items de ordenes con precios y fletes validos.
+grain: Una fila por item dentro de una orden.
+owner: data-engineering
+classification: internal
+lineage:
+  - bronze.order_items
+allow_empty: false
+primary_key:
+  - order_id
+  - order_item_id
+required_columns:
+  - order_id
+  - order_item_id
+  - price
+  - freight_value
+column_types:
+  order_id: string
+  order_item_id: integer
+  price: float
+  freight_value: float
+constraints:
+  order_id:
+    nullable: false
+  order_item_id:
+    nullable: false
+  price:
+    nullable: false
+  freight_value:
+    nullable: false
