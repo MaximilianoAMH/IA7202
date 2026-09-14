@@ -1,8 +1,10 @@
 """Transformaciones y reglas críticas de las entidades Silver."""
 
 from __future__ import annotations
-from src.pudulake.contracts import ContractViolation
+
 import polars as pl
+
+from src.pudulake.contracts import ContractViolation
 
 
 def build_orders(orders: pl.DataFrame) -> pl.DataFrame:
@@ -60,10 +62,7 @@ def build_orders(orders: pl.DataFrame) -> pl.DataFrame:
 
     orders_silver = orders.with_columns(
         [
-            pl.col(col)
-            .cast(pl.String)
-            .str.to_datetime(strict=False)
-            .alias(col)
+            pl.col(col).cast(pl.String).str.to_datetime(strict=False).alias(col)
             for col in date_cols
         ]
     )
@@ -99,8 +98,7 @@ def build_customers(customers: pl.DataFrame) -> pl.DataFrame:
 
 def build_order_items(items: pl.DataFrame) -> pl.DataFrame:
     non_finite = items.filter(
-        ~pl.col("price").is_finite()
-        | ~pl.col("freight_value").is_finite()
+        ~pl.col("price").is_finite() | ~pl.col("freight_value").is_finite()
     )
 
     if non_finite.height > 0:
@@ -109,8 +107,7 @@ def build_order_items(items: pl.DataFrame) -> pl.DataFrame:
         )
 
     negative = items.filter(
-        (pl.col("price") < 0)
-        | (pl.col("freight_value") < 0)
+        (pl.col("price") < 0) | (pl.col("freight_value") < 0)
     )
 
     if negative.height > 0:
@@ -122,18 +119,14 @@ def build_order_items(items: pl.DataFrame) -> pl.DataFrame:
 
 
 def build_payments(payments: pl.DataFrame) -> pl.DataFrame:
-    non_finite = payments.filter(
-        ~pl.col("payment_value").is_finite()
-    )
+    non_finite = payments.filter(~pl.col("payment_value").is_finite())
 
     if non_finite.height > 0:
         raise ContractViolation(
             f"Se encontraron {non_finite.height} pagos no finitos."
         )
 
-    negative = payments.filter(
-        pl.col("payment_value") < 0
-    )
+    negative = payments.filter(pl.col("payment_value") < 0)
 
     if negative.height > 0:
         raise ContractViolation(

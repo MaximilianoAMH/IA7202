@@ -128,9 +128,7 @@ def validate_contract(frame: pl.DataFrame, contract: dict[str, Any]) -> None:
 
     # Primero verificar si la tabla puede estar vacía
     if frame.is_empty() and not contract["allow_empty"]:
-        raise ContractViolation(
-            f"{contract['table']} no admite tablas vacías."
-        )
+        raise ContractViolation(f"{contract['table']} no admite tablas vacías.")
 
     # Luego verificar columnas requeridas
     required_columns = set(contract["required_columns"])
