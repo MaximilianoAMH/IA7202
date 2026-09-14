@@ -16,7 +16,9 @@ def connect_lake(lake_dir: Path) -> duckdb.DuckDBPyConnection:
     catalog = lake_dir / "olist.ducklake"
     files = lake_dir / "olist.ducklake.files"
     files.mkdir(exist_ok=True)
+
     connection = duckdb.connect()
+
     try:
         connection.execute("LOAD ducklake")
     except duckdb.Error as error:
@@ -28,7 +30,7 @@ def connect_lake(lake_dir: Path) -> duckdb.DuckDBPyConnection:
     catalog_uri = f"ducklake:{catalog}".replace("'", "''")
     data_path = str(files).replace("'", "''")
     connection.execute(
-        f"ATTACH '{catalog_uri}' AS olist (DATA_PATH '{data_path}')"
+        f"ATTACH '{catalog_uri}' AS olist (DATA_PATH '{data_path}', OVERRIDE_DATA_PATH TRUE)"
     )
     connection.execute("USE olist")
     for layer in ("bronze", "silver", "gold"):

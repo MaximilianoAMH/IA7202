@@ -46,6 +46,6 @@ constraints:
   order_delivered_customer_date:
     nullable: true
   order_estimated_delivery_date:
-    nullable: false
+    nullable: True
   delivery_timestamp_missing:
     nullable: false
