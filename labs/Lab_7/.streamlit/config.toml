@@ -24,3 +24,12 @@
 # La barra lateral admite su propio tratamiento, si la usan para los filtros.
 # [theme.sidebar]
 # primaryColor = ""
+
+
+[theme]
+base = "dark"
+primaryColor = "#0f9e99"
+textColor = "#fafafa"
+
+[theme.sidebar]
+primaryColor = "#f0883e"
