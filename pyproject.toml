@@ -33,6 +33,8 @@ dependencies = [
     "umap-learn>=0.5.12",
     "xgboost>=3.3.0",
     "duckdb>=1.5.5",
+    "statsmodels>=0.15.0",
+    "streamlit>=1.64.0",
 ]
 
 [dependency-groups]
