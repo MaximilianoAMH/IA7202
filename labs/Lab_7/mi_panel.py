@@ -19,9 +19,9 @@ así que el navegador se actualiza solo al guardar.
 
 from pathlib import Path
 
+import plotly.express as px
 import polars as pl
 import streamlit as st
-import plotly.express as px
 
 RUTA_DATOS = Path(__file__).parent / "data" / "raw" / "penguins.csv"
 
@@ -45,10 +45,10 @@ def cargar_datos() -> pl.DataFrame:
 
 df = cargar_datos()
 
-#raise NotImplementedError(
+# raise NotImplementedError(
 #    "Completen las cuatro secciones de este archivo y borren esta línea "
 #    "antes de ejecutar el programa."
-#)
+# )
 
 # --- 1) La tabla interactiva -----------------------------------------------
 #
@@ -72,12 +72,7 @@ st.header("Exploración de los datos")
 
 st.sidebar.header("Filtros")
 
-especies = sorted(
-    df["species"]
-    .drop_nulls()
-    .unique()
-    .to_list()
-)
+especies = sorted(df["species"].drop_nulls().unique().to_list())
 
 especies_seleccionadas = st.sidebar.multiselect(
     "Especie",
@@ -120,17 +115,14 @@ df_filtrado = df.filter(
 
 st.header("Calidad de los datos")
 
-nulos = pl.DataFrame({
-    "columna": df.columns,
-    "nulos": [
-        df[columna].null_count()
-        for columna in df.columns
-    ],
-})
-
-nulos_con_valores = nulos.filter(
-    pl.col("nulos") > 0
+nulos = pl.DataFrame(
+    {
+        "columna": df.columns,
+        "nulos": [df[columna].null_count() for columna in df.columns],
+    }
 )
+
+nulos_con_valores = nulos.filter(pl.col("nulos") > 0)
 
 st.subheader("Valores faltantes")
 
@@ -139,9 +131,7 @@ st.dataframe(
     hide_index=True,
     width="stretch",
     column_config={
-        "columna": st.column_config.TextColumn(
-            "Columna"
-        ),
+        "columna": st.column_config.TextColumn("Columna"),
         "nulos": st.column_config.NumberColumn(
             "Cantidad de nulos",
             format="%d",
@@ -150,17 +140,13 @@ st.dataframe(
 )
 
 
-### 
+###
 st.subheader("Valores inesperados en `sex`")
 
 sex_esperados = ["MALE", "FEMALE"]
 
 valores_inesperados = (
-    df
-    .filter(
-        pl.col("sex").is_not_null()
-        & ~pl.col("sex").is_in(sex_esperados)
-    )
+    df.filter(pl.col("sex").is_not_null() & ~pl.col("sex").is_in(sex_esperados))
     .group_by("sex")
     .len()
 )
@@ -201,12 +187,9 @@ st.markdown(
 st.header("Visualización de los datos filtrados")
 
 if df_filtrado.is_empty():
-    st.warning(
-        "No hay registros que cumplan con los filtros seleccionados."
-    )
+    st.warning("No hay registros que cumplan con los filtros seleccionados.")
 
 else:
-
     st.subheader("1. Relación entre largo de aleta y masa corporal")
 
     datos_scatter = df_filtrado.drop_nulls(
@@ -226,7 +209,6 @@ else:
         title="Masa corporal según el largo de la aleta",
     )
 
-
     st.plotly_chart(
         fig_scatter,
         width="stretch",
@@ -244,9 +226,7 @@ else:
 
     st.subheader("2. Distribución de la masa corporal")
 
-    datos_masa = df_filtrado.drop_nulls(
-        subset=["body_mass_g"]
-    )
+    datos_masa = df_filtrado.drop_nulls(subset=["body_mass_g"])
 
     fig_hist = px.histogram(
         datos_masa,
@@ -309,10 +289,7 @@ else:
     st.subheader("4. Cantidad de pingüinos por especie")
 
     conteo_especies = (
-        df_filtrado
-        .group_by("species")
-        .len()
-        .sort("len", descending=True)
+        df_filtrado.group_by("species").len().sort("len", descending=True)
     )
 
     fig_bar = px.bar(
