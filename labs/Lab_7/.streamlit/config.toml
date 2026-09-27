@@ -25,11 +25,15 @@
 # [theme.sidebar]
 # primaryColor = ""
 
-
 [theme]
-base = "dark"
-primaryColor = "#0f9e99"
-textColor = "#fafafa"
+base = "light"
+
+primaryColor = "#0077B6"
+backgroundColor = "#F8FCFF"
+secondaryBackgroundColor = "#E0F2FE"
+textColor = "#102A43"
 
 [theme.sidebar]
-primaryColor = "#f0883e"
+backgroundColor = "#EAF6FC"
+primaryColor = "#0077B6"
+textColor = "#102A43"
