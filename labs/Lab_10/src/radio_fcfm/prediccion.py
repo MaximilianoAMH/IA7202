@@ -2,13 +2,13 @@
 
 from collections.abc import Sequence
 
-
 import numpy as np
 import pandas as pd
 from sklearn.pipeline import Pipeline
 
 from .data import limpiar_letra
 from .evaluation import a_franja
+
 
 def predecir_animo(modelo: Pipeline, letras: Sequence[str]) -> pd.DataFrame:
     """Predice el ánimo, la franja y la confianza de cada letra.

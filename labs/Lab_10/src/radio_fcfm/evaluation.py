@@ -4,6 +4,7 @@ from collections.abc import Sequence
 
 from .contratos import FRANJAS
 
+
 def a_franja(estado: str) -> str:
     """Devuelve la franja de programación en que suena un estado de ánimo.
 
@@ -33,6 +34,6 @@ def acierto_por_franja(y_real: Sequence[str], y_pred: Sequence[str]) -> float:
 
     aciertos = sum(
         a_franja(real) == a_franja(predicho)
-        for real, predicho in zip(y_real, y_pred)
+        for real, predicho in zip(y_real, y_pred, strict=True)
     )
     return aciertos / len(y_real)
