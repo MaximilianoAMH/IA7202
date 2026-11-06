@@ -9,3 +9,5 @@ data/processed/*
 !data/processed/.gitignore
 reports/figures/*
 !reports/figures/.gitignore
+
+data/raw/letras.csv
