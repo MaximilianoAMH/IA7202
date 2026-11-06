@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import lightgbm
 import numpy as np
@@ -52,9 +52,52 @@ def temporal_split(
     Rechaza largos distintos, ausencia de `hora` de tipo fecha, entradas
     vacías, horizonte menor que 1, cortes invertidos y particiones vacías.
     """
-    raise NotImplementedError(
-        "Completen temporal_split antes de ejecutar esta celda."
-    )
+    if X.height != len(y):
+        raise ValueError("X e y deben tener el mismo largo")
+    if X.is_empty():
+        raise ValueError("Las entradas no pueden estar vacías")
+    if "hora" not in X.columns:
+        raise ValueError("X debe incluir hora")
+    if X.schema["hora"].base_type() not in (pl.Date, pl.Datetime):
+        raise ValueError("hora debe ser de tipo fecha")
+    if horizonte < 1:
+        raise ValueError("horizonte debe ser mayor o igual que 1")
+
+    horas = X["hora"]
+    if horas.dtype == pl.Date:
+        horas = horas.cast(pl.Datetime)
+
+    zona = horas.drop_nulls()[0].tzinfo
+
+    def fecha(valor):
+        if isinstance(valor, str):
+            valor = datetime.fromisoformat(valor)
+        if valor.tzinfo is None:
+            valor = valor.replace(tzinfo=zona)
+        return valor
+
+    validation = fecha(inicio_validation)
+    test = fecha(inicio_test)
+
+    if validation >= test:
+        raise ValueError("Los cortes están invertidos")
+
+    delta = timedelta(hours=horizonte)
+    target = horas + delta
+
+    mascaras = {
+        "train": target < validation - delta,
+        "validation": (target >= validation) & (target < test - delta),
+        "test": target >= test,
+    }
+
+    partes = {}
+    for nombre, mascara in mascaras.items():
+        partes[nombre] = (X.filter(mascara), y.filter(mascara))
+        if partes[nombre][0].is_empty():
+            raise ValueError(f"La partición {nombre} quedó vacía")
+
+    return partes
 
 
 def rmse(y_real: pl.Series, y_pred: pl.Series) -> float:
