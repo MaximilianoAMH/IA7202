@@ -80,7 +80,7 @@ def temporal_split(
     test = fecha(inicio_test)
 
     if validation >= test:
-        raise ValueError("Los cortes están invertidos")
+        raise ValueError("inicio_test debe ser posterior a inicio_validation")
 
     delta = timedelta(hours=horizonte)
     target = horas + delta
@@ -193,10 +193,20 @@ def daily_persistence_forecast(
     notebook, esas filas se excluyen de todas ellas; las features con
     faltantes se conservan para LightGBM.
     """
-    raise NotImplementedError(
-        "Completen daily_persistence_forecast antes de ejecutar esta celda."
-    )
+    if not 1 <= horizonte <= 24:
+        raise ValueError("El horizonte debe estar entre 1 y 24 horas")
 
+    hora_ayer = X["hora"] + timedelta(hours=horizonte - 24)
+    return (
+        pl.DataFrame({"hora": hora_ayer})
+        .join(
+            temperaturas.select("hora", "temp"),
+            on="hora",
+            how="left",
+            maintain_order="left",
+        )["temp"]
+        .alias("pronostico")
+    )
 
 def climatology_forecast(
     X_train: pl.DataFrame,
@@ -213,8 +223,27 @@ def climatology_forecast(
     no aparece en train, usa la media general de train. Devuelve una serie
     `pronostico` con una fila por cada fila de `X`.
     """
-    raise NotImplementedError(
-        "Completen climatology_forecast antes de ejecutar esta celda."
+    hora_target = pl.col("hora") + timedelta(hours=horizonte)
+    calendario = [
+        hora_target.dt.month().alias("mes"),
+        hora_target.dt.hour().alias("hora_del_dia"),
+    ]
+    promedios = (
+        X_train.select(calendario)
+        .with_columns(y_train.alias("pronostico"))
+        .group_by("mes", "hora_del_dia")
+        .agg(pl.col("pronostico").mean())
+    )
+
+    return (
+        X.select(calendario)
+        .join(
+            promedios,
+            on=["mes", "hora_del_dia"],
+            how="left",
+            maintain_order="left",
+        )["pronostico"]
+        .fill_null(y_train.mean())
     )
 
 
