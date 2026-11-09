@@ -208,6 +208,7 @@ def daily_persistence_forecast(
         .alias("pronostico")
     )
 
+
 def climatology_forecast(
     X_train: pl.DataFrame,
     y_train: pl.Series,
@@ -262,9 +263,24 @@ def make_expanding_folds(
     `indice` es la columna `hora` de `X`. Devuelve posiciones enteras de esa
     columna, no fechas: son las que usa `walk_forward` para seleccionar filas.
     """
-    raise NotImplementedError(
-        "Completen make_expanding_folds antes de ejecutar esta celda."
-    )
+    if indice.dtype == pl.Date:
+        indice = indice.cast(pl.Datetime)
+    zona = indice.drop_nulls()[0].tzinfo if indice.drop_nulls().len() else None
+    purga = timedelta(hours=purga_horas)
+    folds = []
+    for anio in anios:
+        inicio = datetime(anio, 1, 1, tzinfo=zona)
+        fin = datetime(anio + 1, 1, 1, tzinfo=zona)
+        train = np.flatnonzero((indice < inicio - purga).fill_null(False))
+        validation = np.flatnonzero(
+            ((indice >= inicio) & (indice < fin)).fill_null(False)
+        )
+        if train.size == 0 or validation.size == 0:
+            raise ValueError(
+                f"Train o validation quedó vacío para el año {anio}"
+            )
+        folds.append((train, validation))
+    return folds
 
 
 def walk_forward(
@@ -281,9 +297,25 @@ def walk_forward(
     Devuelve una tabla con las columnas `hora` (el origen), `fold`, `real` y
     `pronostico`.
     """
-    raise NotImplementedError(
-        "Completen walk_forward antes de ejecutar esta celda."
-    )
+    from sklearn.base import clone
+
+    features = X.drop("hora")
+    resultados = []
+    for numero, (train, validation) in enumerate(folds, start=1):
+        if np.intersect1d(train, validation).size:
+            raise ValueError("Train no puede incluir validation")
+        ajustado = clone(modelo).fit(features[train], y.gather(train))
+        resultados.append(
+            pl.DataFrame(
+                {
+                    "hora": X["hora"].gather(validation),
+                    "fold": [numero] * len(validation),
+                    "real": y.gather(validation),
+                    "pronostico": ajustado.predict(features[validation]),
+                }
+            )
+        )
+    return pl.concat(resultados)
 
 
 def recall_evento(real: pl.Series, alerta: pl.Series) -> float:
@@ -340,6 +372,18 @@ def mejor_umbral(
     pronóstico es menor que el umbral. El umbral se elige en validation y se
     aplica una sola vez en test.
     """
-    raise NotImplementedError(
-        "Completen mejor_umbral antes de ejecutar esta celda."
-    )
+    if len(real) != len(pronostico):
+        raise ValueError("real y pronostico deben tener el mismo largo")
+    if len(pronostico) == 0:
+        raise ValueError("No hay pronósticos para evaluar")
+
+    mejor_candidato = None
+    menor_costo = float("inf")
+    for candidato in pronostico.unique(maintain_order=True):
+        costo = costo_alerta(
+            real, pronostico < candidato, costo_por_alerta, costo_helada
+        )
+        if costo < menor_costo:
+            mejor_candidato = float(candidato)
+            menor_costo = costo
+    return mejor_candidato, menor_costo
